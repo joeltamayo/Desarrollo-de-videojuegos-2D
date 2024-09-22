@@ -1,9 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEngine;
 
 public class NewBehaviourScript : MonoBehaviour
 {
+    public GameObject BulletPrefab;
     public float Speed;
     public float JumpForce;
 
@@ -11,6 +13,7 @@ public class NewBehaviourScript : MonoBehaviour
     private Animator Animator;
     private float Horizontal;
     private bool Grounded;
+    private float LastShoot;
 
     // Start is called before the first frame update
     void Start()
@@ -38,13 +41,31 @@ public class NewBehaviourScript : MonoBehaviour
         else Grounded = false;
         
 
-        if (Input.GetKeyDown(KeyCode.W) && Grounded) {
+        if ((Input.GetKeyDown(KeyCode.W) && Grounded ) || (Input.GetKeyDown(KeyCode.UpArrow) && Grounded)) {
             Jump();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Space) && Time.time > LastShoot + 0.25f)
+        {
+            Shoot();
+            LastShoot = Time.time;
         }
     }
 
     private void Jump() {
         Rigidbody2D.AddForce(Vector2.up * JumpForce);
+    }
+
+    private void Shoot()
+    {
+
+        Vector3  direction;
+
+        if (transform.localScale.x == 1.0f) direction = Vector3.right;
+        else direction = Vector3.left; 
+        
+        GameObject bullet = Instantiate(BulletPrefab, transform.position + direction * 0.1f, Quaternion.identity);
+        bullet.GetComponent<BulletScript>().SetDirection(direction);
     }
 
     private void FixedUpdate(){
