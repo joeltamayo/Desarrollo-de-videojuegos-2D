@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "606638531787",
+    "project_id": "juego2dunity",
+    "storage_bucket": "juego2dunity.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:606638531787:android:ab9146aff318624625674e",
+        "android_client_info": {
+          "package_name": "com.juegobueno.juegobueno"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvPXvR9IZsEVU2gaKfaudhV9phe4N7xuE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

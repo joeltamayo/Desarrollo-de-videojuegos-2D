@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
+using Firebase.Firestore;
+using Firebase.Extensions;
 
 public class NewBehaviourScript : MonoBehaviour
 {
@@ -14,6 +16,8 @@ public class NewBehaviourScript : MonoBehaviour
     private float Horizontal;
     private bool Grounded;
     private float LastShoot;
+
+    private int coin;
 
     // Start is called before the first frame update
     void Start()
@@ -29,19 +33,21 @@ public class NewBehaviourScript : MonoBehaviour
 
         if (Horizontal < 0.0f) transform.localScale = new Vector3(-1.0f, 1.0f, 1.0f);
         else if (Horizontal > 0.0f) transform.localScale = new Vector3(1.0f, 1.0f, 1.0f);
-        
+
 
         Animator.SetBool("Running", Horizontal != 0.0f);
 
         Debug.DrawRay(transform.position, Vector3.down * 0.1f, Color.red);
 
-        if (Physics2D.Raycast(transform.position, Vector3.down, 0.1f)) {
+        if (Physics2D.Raycast(transform.position, Vector3.down, 0.1f))
+        {
             Grounded = true;
-        } 
+        }
         else Grounded = false;
-        
 
-        if ((Input.GetKeyDown(KeyCode.W) && Grounded ) || (Input.GetKeyDown(KeyCode.UpArrow) && Grounded)) {
+
+        if ((Input.GetKeyDown(KeyCode.W) && Grounded) || (Input.GetKeyDown(KeyCode.UpArrow) && Grounded))
+        {
             Jump();
         }
 
@@ -52,23 +58,44 @@ public class NewBehaviourScript : MonoBehaviour
         }
     }
 
-    private void Jump() {
+    private void Jump()
+    {
         Rigidbody2D.AddForce(Vector2.up * JumpForce);
+        coin ++;
+        getCoins(coin);
     }
 
     private void Shoot()
     {
 
-        Vector3  direction;
+        Vector3 direction;
 
         if (transform.localScale.x == 1.0f) direction = Vector3.right;
-        else direction = Vector3.left; 
-        
+        else direction = Vector3.left;
+
         GameObject bullet = Instantiate(BulletPrefab, transform.position + direction * 0.1f, Quaternion.identity);
         bullet.GetComponent<BulletScript>().SetDirection(direction);
     }
 
-    private void FixedUpdate(){
+    private void FixedUpdate()
+    {
         Rigidbody2D.velocity = new Vector2(Horizontal, Rigidbody2D.velocity.y);
+    }
+
+    private void getCoins(int coin)
+    {
+        FirebaseFirestore db = FirebaseFirestore.DefaultInstance;
+
+        DocumentReference docRef = db.Collection("users").Document("alovelace");
+        Dictionary<string, object> user = new Dictionary<string, object>
+        {
+                { "First", "Ada" },
+                { "Last", "Lovelace" },
+                { "Born", coin },
+        };
+        docRef.SetAsync(user).ContinueWithOnMainThread(task =>
+        {
+            Debug.Log("Added data to the alovelace document in the users collection.");
+        });
     }
 }
