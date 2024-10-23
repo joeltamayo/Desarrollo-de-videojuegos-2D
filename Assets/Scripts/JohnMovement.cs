@@ -4,6 +4,8 @@ using Unity.Mathematics;
 using UnityEngine;
 using Firebase.Firestore;
 using Firebase.Extensions;
+using System;
+using UnityEngine.SceneManagement;
 
 public class NewBehaviourScript : MonoBehaviour
 {
@@ -17,11 +19,23 @@ public class NewBehaviourScript : MonoBehaviour
     private bool Grounded;
     private float LastShoot;
 
-    private int coin;
+    private int coinsenBD;
+    private int coinsenGame;
+
+    FirebaseFirestore db;
 
     // Start is called before the first frame update
     void Start()
     {
+        // Inicializamos la base de aatos
+        db = FirebaseFirestore.DefaultInstance;
+        // Suscribirse al evento de cambio de escena
+        SceneManager.sceneLoaded += OnSceneLoaded;
+        // Obtehemos las monedas de la base de datos
+        getCoins("players", "player1");
+        // Reiniciamos las monedas actuales
+        coinsenGame = 0;
+
         Rigidbody2D = GetComponent<Rigidbody2D>();
         Animator = GetComponent<Animator>();
     }
@@ -61,8 +75,7 @@ public class NewBehaviourScript : MonoBehaviour
     private void Jump()
     {
         Rigidbody2D.AddForce(Vector2.up * JumpForce);
-        coin ++;
-        getCoins(coin);
+        OnCoinCollected(1);
     }
 
     private void Shoot()
@@ -82,20 +95,76 @@ public class NewBehaviourScript : MonoBehaviour
         Rigidbody2D.velocity = new Vector2(Horizontal, Rigidbody2D.velocity.y);
     }
 
-    private void getCoins(int coin)
+    private void getCoins(string collection, string documentId)
     {
-        FirebaseFirestore db = FirebaseFirestore.DefaultInstance;
-
-        DocumentReference docRef = db.Collection("users").Document("alovelace");
-        Dictionary<string, object> user = new Dictionary<string, object>
+        DocumentReference docRef = db.Collection(collection).Document(documentId);
+        docRef.GetSnapshotAsync().ContinueWithOnMainThread(task =>
         {
-                { "First", "Ada" },
-                { "Last", "Lovelace" },
-                { "Born", coin },
-        };
-        docRef.SetAsync(user).ContinueWithOnMainThread(task =>
-        {
-            Debug.Log("Added data to the alovelace document in the users collection.");
+            if (task.IsCompletedSuccessfully)
+            {
+                DocumentSnapshot snapshot = task.Result;
+                if (snapshot.Exists)
+                {
+                    if (snapshot.TryGetValue("coins", out int coinCount))
+                    {
+                        coinsenBD = coinCount;
+                        Debug.Log($"Número de monedas en la base de datos: {coinCount}");
+                    }
+                    else
+                    {
+                        Debug.Log("Campo 'coins' no encontrado en el documento.");
+                    }
+                }
+                else
+                {
+                    Debug.Log($"Documento '{documentId}' no existe en la colección '{collection}'.");
+                }
+            }
+            else
+            {
+                Debug.LogError("Error obteniendo el documento: " + task.Exception);
+            }
         });
     }
+
+    public void UpdatePlayerCoins(string collection, string documentId, int newCoins)
+    {
+        DocumentReference docRef = db.Collection(collection).Document(documentId);
+        Dictionary<string, object> updates = new Dictionary<string, object>
+        {
+            { "coins", newCoins }
+        };
+
+        docRef.UpdateAsync(updates).ContinueWithOnMainThread(task =>
+        {
+            if (task.IsCompletedSuccessfully)
+            {
+                Debug.Log("Número de monedas actualizado en la base de datos: " + newCoins);
+            }
+            else
+            {
+                Debug.LogError("Error actualizando el número de monedas: " + task.Exception);
+            }
+        });
+    }
+
+    // Método para añadir monedas cuando el jugador las recoge
+    public void OnCoinCollected(int coinsCollected)
+    {
+        coinsenGame += coinsCollected;
+        Debug.Log($"Monedas recogidas: {coinsCollected}, Total en juego: {coinsenGame}");
+    }
+
+    void OnApplicationQuit()
+    {
+        // Subir monedas cuando se cierra el juego
+        UpdatePlayerCoins("players", "player1", coinsenBD + coinsenGame);
+    }
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // Subir monedas cuando se cambia de escena
+        UpdatePlayerCoins("players", "player1", coinsenBD + coinsenGame);
+    }
 }
+
