@@ -6,6 +6,7 @@ using Firebase.Firestore;
 using Firebase.Extensions;
 using System;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class NewBehaviourScript : MonoBehaviour
 {
@@ -21,7 +22,7 @@ public class NewBehaviourScript : MonoBehaviour
 
     private int coinsenBD;
     private int coinsenGame;
-
+    public Text CoinsText;  // Añadir una referencia al objeto de texto
     FirebaseFirestore db;
 
     // Start is called before the first frame update
@@ -75,7 +76,6 @@ public class NewBehaviourScript : MonoBehaviour
     private void Jump()
     {
         Rigidbody2D.AddForce(Vector2.up * JumpForce);
-        OnCoinCollected(1);
     }
 
     private void Shoot()
@@ -109,6 +109,8 @@ public class NewBehaviourScript : MonoBehaviour
                     {
                         coinsenBD = coinCount;
                         Debug.Log($"Número de monedas en la base de datos: {coinCount}");
+                        // Actualizar la etiqueta de texto
+                        UpdateCoinsText();
                     }
                     else
                     {
@@ -152,7 +154,15 @@ public class NewBehaviourScript : MonoBehaviour
     public void OnCoinCollected(int coinsCollected)
     {
         coinsenGame += coinsCollected;
-        Debug.Log($"Monedas recogidas: {coinsCollected}, Total en juego: {coinsenGame}");
+        Debug.Log($"Total en juego: {coinsenGame}");
+        // Actualizar la etiqueta de texto
+        UpdateCoinsText();
+    }
+
+    // Método para actualizar la etiqueta de texto con el número de monedas actual
+    private void UpdateCoinsText()
+    {
+        CoinsText.text = $"{coinsenBD + coinsenGame}";
     }
 
     void OnApplicationQuit()
